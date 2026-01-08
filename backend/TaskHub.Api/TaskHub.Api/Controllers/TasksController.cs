@@ -19,6 +19,8 @@ namespace TaskHub.Api.Controllers
         {
             return Ok(Tasks);
         }
+        [ProducesResponseType(typeof(TaskItem), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPost]
         public IActionResult Add([FromBody] CreateTaskRequest request)
         {
@@ -32,7 +34,7 @@ namespace TaskHub.Api.Controllers
             _nextId++;
             Tasks.Add(task);
 
-            return Ok(Tasks);
+            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
         }
 
         [HttpPatch("{id}/toggle")]
@@ -53,8 +55,7 @@ namespace TaskHub.Api.Controllers
         {
             var task = Tasks.FirstOrDefault(t => t.Id == id);
 
-            if (task == null)
-                return NotFound();
+            if (task == null) return NotFound();
 
             return Ok(task);
         }
@@ -70,6 +71,23 @@ namespace TaskHub.Api.Controllers
             Tasks.Remove(task);
             return NoContent(); // 204
         }
+
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] UpdateTaskRequest request)
+        {
+            var task = Tasks.FirstOrDefault(t => t.Id == id);
+            if (task == null)
+                return NotFound();
+
+            if (request == null || string.IsNullOrWhiteSpace(request.Title))
+                return BadRequest("title is required");
+
+            task.Title = request.Title.Trim();
+            task.IsDone = request.IsDone;
+
+            return Ok(task);
+        }
+
 
     }
 }
