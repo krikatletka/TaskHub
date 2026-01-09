@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace TaskHub.Api.Controllers
 {
@@ -7,77 +8,53 @@ namespace TaskHub.Api.Controllers
     [ApiController]
     public class TasksController : ControllerBase
     {
+        private readonly AppDbContext _db;
 
-        private static readonly List<TaskItem> Tasks = new()
+        public TasksController(AppDbContext db)
         {
-            new TaskItem { Id = 1, Title = "Learn C#", IsDone = false }
-        };
-        private static int _nextId = 2;
+            _db = db;
+        }
 
         [HttpGet]
         public IActionResult GetAll()
         {
-            return Ok(Tasks);
-        }
-        [ProducesResponseType(typeof(TaskItem), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [HttpPost]
-        public IActionResult Add([FromBody] CreateTaskRequest request)
-        {
-            var task = new TaskItem
-            {
-                Id = _nextId,
-                Title = request.Title,
-                IsDone = false
-            };
-
-            _nextId++;
-            Tasks.Add(task);
-
-            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
-        }
-
-        [HttpPatch("{id}/toggle")]
-        public IActionResult ToggleDone(int id)
-        {
-            var task = Tasks.FirstOrDefault(t => t.Id == id);
-
-            if (task == null)
-                return NotFound();
-
-            task.IsDone = !task.IsDone;
-
-            return Ok(task);
+            var tasks = _db.Tasks.AsNoTracking().ToList();
+            return Ok(tasks);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var task = Tasks.FirstOrDefault(t => t.Id == id);
-
+            var task = _db.Tasks.AsNoTracking().FirstOrDefault(t => t.Id == id);
             if (task == null) return NotFound();
-
             return Ok(task);
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [ProducesResponseType(typeof(TaskItem), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HttpPost]
+        public IActionResult Add([FromBody] CreateTaskRequest request)
         {
-            var task = Tasks.FirstOrDefault(t => t.Id == id);
+            if (request == null || string.IsNullOrWhiteSpace(request.Title))
+                return BadRequest("title is required");
 
-            if (task == null)
-                return NotFound();
+            var task = new TaskItem
+            {
+                Title = request.Title.Trim(),
+                IsDone = false
+            };
 
-            Tasks.Remove(task);
-            return NoContent(); // 204
+            _db.Tasks.Add(task);
+            _db.SaveChanges();
+
+            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
         }
 
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody] UpdateTaskRequest request)
         {
-            var task = Tasks.FirstOrDefault(t => t.Id == id);
-            if (task == null)
-                return NotFound();
+            var task = _db.Tasks.FirstOrDefault(t => t.Id == id);
+            if (task == null) return NotFound();
 
             if (request == null || string.IsNullOrWhiteSpace(request.Title))
                 return BadRequest("title is required");
@@ -85,8 +62,35 @@ namespace TaskHub.Api.Controllers
             task.Title = request.Title.Trim();
             task.IsDone = request.IsDone;
 
+            _db.SaveChanges();
+
             return Ok(task);
         }
+
+        [HttpPatch("{id}/toggle")]
+        public IActionResult ToggleDone(int id)
+        {
+            var task = _db.Tasks.FirstOrDefault(t => t.Id == id);
+            if (task == null) return NotFound();
+
+            task.IsDone = !task.IsDone;
+            _db.SaveChanges();
+
+            return Ok(task);
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var task = _db.Tasks.FirstOrDefault(t => t.Id == id);
+            if (task == null) return NotFound();
+
+            _db.Tasks.Remove(task);
+            _db.SaveChanges();
+
+            return NoContent(); // 204
+        }
+
 
 
     }
