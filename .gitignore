@@ -1,11 +1,22 @@
-# Visual Studio
+# ===== Visual Studio =====
 .vs/
-*.user
-*.suo
-
-# .NET build
 bin/
 obj/
-
-# Logs
+*.user
+*.suo
+*.cache
 *.log
+node_modules/
+# ===== .NET =====
+*.dll
+*.exe
+*.pdb
+
+# ===== SQLite =====
+*.db
+*.db-shm
+*.db-wal
+
+# ===== OS =====
+.DS_Store
+Thumbs.db

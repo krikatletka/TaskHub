@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|e:\\epic games\\taskhub\\backend\\taskhub.api\\taskhub.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|solutionrelative:taskhub.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|e:\\epic games\\taskhub\\backend\\taskhub.api\\taskhub.api\\controllers\\taskscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|solutionrelative:taskhub.api\\controllers\\taskscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -21,10 +25,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|e:\\epic games\\taskhub\\backend\\taskhub.api\\taskhub.api\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|solutionrelative:taskhub.api\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|e:\\epic games\\taskhub\\backend\\taskhub.api\\taskhub.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|solutionrelative:taskhub.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{61AF2AE4-9EC0-4E5C-8513-1EFCA85D2654}|TaskHub.Api\\TaskHub.Api.csproj|e:\\epic games\\taskhub\\backend\\taskhub.api\\taskhub.api\\taskitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -46,7 +46,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 8,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -58,7 +58,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "appsettings.json",
               "DocumentMoniker": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\appsettings.json",
               "RelativeDocumentMoniker": "TaskHub.Api\\appsettings.json",
@@ -66,8 +66,7 @@
               "RelativeToolTip": "TaskHub.Api\\appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-01-09T16:18:49.231Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-09T16:18:49.231Z"
             },
             {
               "$type": "Document",
@@ -79,25 +78,24 @@
               "RelativeToolTip": "TaskHub.Api\\TaskHub.Api.csproj",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-01-09T16:01:10.82Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-09T16:01:10.82Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 0,
               "Title": "Program.cs",
               "DocumentMoniker": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\Program.cs",
               "RelativeDocumentMoniker": "TaskHub.Api\\Program.cs",
               "ToolTip": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\Program.cs",
               "RelativeToolTip": "TaskHub.Api\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAmAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAAOAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-09T14:40:01.201Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "AppDbContext.cs",
               "DocumentMoniker": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\AppDbContext.cs",
               "RelativeDocumentMoniker": "TaskHub.Api\\AppDbContext.cs",
@@ -105,12 +103,11 @@
               "RelativeToolTip": "TaskHub.Api\\AppDbContext.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-09T14:39:34.105Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-09T14:39:34.105Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "UpdateTaskRequest.cs",
               "DocumentMoniker": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\UpdateTaskRequest.cs",
               "RelativeDocumentMoniker": "TaskHub.Api\\UpdateTaskRequest.cs",
@@ -118,8 +115,7 @@
               "RelativeToolTip": "TaskHub.Api\\UpdateTaskRequest.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T21:07:41.889Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T21:07:41.889Z"
             },
             {
               "$type": "Document",
@@ -135,13 +131,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "TasksController.cs",
               "DocumentMoniker": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\Controllers\\TasksController.cs",
               "RelativeDocumentMoniker": "TaskHub.Api\\Controllers\\TasksController.cs",
               "ToolTip": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\Controllers\\TasksController.cs",
               "RelativeToolTip": "TaskHub.Api\\Controllers\\TasksController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAZAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-07T14:55:17.193Z",
               "EditorCaption": ""
@@ -156,12 +152,11 @@
               "RelativeToolTip": "TaskHub.Api\\TaskItem.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-07T14:54:11.297Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-07T14:54:11.297Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "HealthController.cs",
               "DocumentMoniker": "E:\\Epic Games\\TaskHub\\backend\\TaskHub.Api\\TaskHub.Api\\Controllers\\HealthController.cs",
               "RelativeDocumentMoniker": "TaskHub.Api\\Controllers\\HealthController.cs",
@@ -169,8 +164,7 @@
               "RelativeToolTip": "TaskHub.Api\\Controllers\\HealthController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-07T13:09:29.483Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-07T13:09:29.483Z"
             }
           ]
         }

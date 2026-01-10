@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskHub</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>TaskHub</h1>
+      <p class="sub">Simple tasks. Clean UI. Real API.</p>
+    </header>
+
+    <section class="panel">
+      <form id="task-form" class="add">
+        <input id="taskInput" type="text" placeholder="Add a task..." maxlength="100" />
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+
+      <div class="toolbar">
+        <input id="searchInput" class="input" type="text" placeholder="Search..." />
+
+        <select id="statusFilter" class="select">
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="done">Done</option>
+        </select>
+
+        <select id="sortSelect" class="select">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="az">A–Z</option>
+          <option value="doneFirst">Done first</option>
+        </select>
+
+        <button id="refreshBtn" class="btn" type="button">Refresh</button>
+        <button id="clearDoneBtn" class="btn" type="button">Clear completed</button>
+
+      </div>
+
+      <div id="stats" class="stats">Loading…</div>
+    </section>
+
+    <main class="list">
+      <ul id="taskList"></ul>
+    </main>
+  </div>
+  <div id="toasts" class="toasts"></div>
+  <script src="app.js"></script>
+</body>
+</html>
