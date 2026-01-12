@@ -8,12 +8,12 @@ export default function App() {
 
   const [title, setTitle] = useState("");
 
-  // фильтры (как в твоём vanilla UI)
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all"); // all | active | done
-  const [sort, setSort] = useState("newest");  // newest | oldest | az | doneFirst
 
-  // редактирование
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all"); 
+  const [sort, setSort] = useState("newest");  
+
+
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
 
@@ -45,7 +45,7 @@ export default function App() {
     loadTasks();
   }, []);
 
-  // ----- derived list (filters + sort) -----
+
   const visibleTasks = useMemo(() => {
     const q = query.trim().toLowerCase();
 
@@ -71,14 +71,13 @@ export default function App() {
     return { total, done, active };
   }, [tasks]);
 
-  // ----- actions -----
   async function addTask(e) {
     e.preventDefault();
 
     const trimmed = title.trim();
     if (!trimmed) return;
 
-    // optimistic temp
+
     const tempId = -Date.now();
     const temp = { id: tempId, title: trimmed, isDone: false };
     setTasks(prev => [temp, ...prev]);
@@ -95,21 +94,21 @@ export default function App() {
       setTasks(prev => prev.map(t => (t.id === tempId ? created : t)));
     } catch (e2) {
       console.error(e2);
-      // rollback
+
       setTasks(prev => prev.filter(t => t.id !== tempId));
       alert("Add failed");
     }
   }
 
   async function toggleDone(id) {
-    // optimistic
+
     setTasks(prev => prev.map(t => (t.id === id ? { ...t, isDone: !t.isDone } : t)));
 
     try {
       await apiFetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
     } catch (e) {
       console.error(e);
-      // rollback = flip back
+
       setTasks(prev => prev.map(t => (t.id === id ? { ...t, isDone: !t.isDone } : t)));
       alert("Toggle failed");
     }
@@ -132,7 +131,6 @@ export default function App() {
     const before = tasks.find(t => t.id === id);
     if (!before) return;
 
-    // optimistic
     setTasks(prev => prev.map(t => (t.id === id ? { ...t, title: trimmed } : t)));
     cancelEdit();
 
@@ -144,7 +142,7 @@ export default function App() {
       });
     } catch (e) {
       console.error(e);
-      // rollback
+
       setTasks(prev => prev.map(t => (t.id === id ? before : t)));
       alert("Update failed");
     }
@@ -154,14 +152,14 @@ export default function App() {
     const before = tasks.find(t => t.id === id);
     if (!before) return;
 
-    // optimistic
+
     setTasks(prev => prev.filter(t => t.id !== id));
 
     try {
       await apiFetch(`${API_URL}/${id}`, { method: "DELETE" });
     } catch (e) {
       console.error(e);
-      // rollback
+
       setTasks(prev => [before, ...prev]);
       alert("Delete failed");
     }
@@ -174,7 +172,7 @@ export default function App() {
     const before = tasks;
     const doneIds = new Set(done.map(t => t.id));
 
-    // optimistic
+
     setTasks(prev => prev.filter(t => !doneIds.has(t.id)));
 
     try {
@@ -188,7 +186,6 @@ export default function App() {
     }
   }
 
-  // ----- UI -----
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 20, fontFamily: "system-ui" }}>
       <h1 style={{ margin: 0 }}>TaskHub (React)</h1>
