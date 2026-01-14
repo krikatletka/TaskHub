@@ -1,476 +1,348 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import "./styles/theme.css";
 
-const API_URL = "https://localhost:7102/api/Tasks";
+import Sidebar from "./components/Sidebar.jsx";
+import FolderModal from "./components/FolderModal.jsx";
+import Toolbar from "./components/Toolbar.jsx";
+import TaskList from "./components/TaskList.jsx";
+import CalendarPanel from "./components/CalendarPanel.jsx";
 
-const THEMES = {
-  pink:   { name: "Pink",   accent: "#ff4d8d", bg: "#fff1f6", card: "#ffffff", border: "#ffd1e1", text: "#2b2b2b" },
-  purple: { name: "Purple", accent: "#8b5cf6", bg: "#f5f3ff", card: "#ffffff", border: "#ddd6fe", text: "#2b2b2b" },
-  blue:   { name: "Blue",   accent: "#3b82f6", bg: "#eff6ff", card: "#ffffff", border: "#bfdbfe", text: "#1f2937" },
-  green:  { name: "Green",  accent: "#10b981", bg: "#ecfdf5", card: "#ffffff", border: "#a7f3d0", text: "#1f2937" },
-  dark:   { name: "Dark",   accent: "#f472b6", bg: "#0b0b10", card: "#12121a", border: "#2b2b38", text: "#f2f2f2" },
-};
+import { getTasks, createTask, toggleTask, updateTask, deleteTask } from "./services/tasksApi.js";
+import { DEFAULT_FOLDERS, loadFolders, saveFolders } from "./services/foldersApi.js";
 
-const LS_THEME_KEY = "taskhub_theme";
+const META_KEY = "taskhub_meta_v4";
+
+function loadMeta() {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+function saveMeta(meta) {
+  localStorage.setItem(META_KEY, JSON.stringify(meta));
+}
+function startOfDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function ymd(d) {
+  const x = new Date(d);
+  const yyyy = x.getFullYear();
+  const mm = String(x.getMonth() + 1).padStart(2, "0");
+  const dd = String(x.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 export default function App() {
+  const [collapsed, setCollapsed] = useState(false);
+
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [title, setTitle] = useState("");
+  const [folders, setFolders] = useState(() => loadFolders() ?? DEFAULT_FOLDERS);
+  const [selectedFolderId, setSelectedFolderId] = useState("inbox");
 
-  const [query, setQuery] = useState("");
+  const [metaById, setMetaById] = useState(() => loadMeta());
+
+  const [quick, setQuick] = useState("all");
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [cursor, setCursor] = useState(() => new Date());
+
+  const [newTitle, setNewTitle] = useState("");
+  const [newDueDate, setNewDueDate] = useState(""); // YYYY-MM-DD
+  const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [sort, setSort] = useState("newest");
+  const [sort, setSort] = useState("created_desc");
 
-  const [editingId, setEditingId] = useState(null);
-  const [editingTitle, setEditingTitle] = useState("");
+  // folder modal
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
 
-  const [toasts, setToasts] = useState([]);
+  useEffect(() => saveFolders(folders), [folders]);
+  useEffect(() => saveMeta(metaById), [metaById]);
 
-  const [themeKey, setThemeKey] = useState(() => localStorage.getItem(LS_THEME_KEY) || "pink");
-  const theme = THEMES[themeKey] ?? THEMES.pink;
-
-  useEffect(() => {
-    localStorage.setItem(LS_THEME_KEY, themeKey);
-  }, [themeKey]);
-
-  function pushToast(type, title, msg, ms = 2200) {
-    const id = Date.now() + Math.random();
-    const toast = { id, type, title, msg };
-    setToasts((prev) => [...prev, toast]);
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, ms);
-  }
-
-  async function apiFetch(url, options) {
-    const res = await fetch(url, options);
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`${res.status} ${res.statusText} ${text}`.trim());
-    }
-    return res;
-  }
-
-  async function loadTasks() {
+  async function refresh() {
     setLoading(true);
     try {
-      const res = await apiFetch(API_URL);
-      const data = await res.json();
+      const data = await getTasks();
       setTasks(data);
-    } catch (e) {
-      console.error(e);
-      pushToast("error", "Load failed", "Check API / HTTPS certificate / CORS");
+
+      setMetaById((prev) => {
+        const next = { ...prev };
+        for (const t of data) {
+          if (!next[t.id]) {
+            next[t.id] = {
+              folderId: "inbox",
+              dueDate: null,
+              createdAt: new Date().toISOString(),
+            };
+          }
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadTasks();
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const visibleTasks = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  async function add() {
+    const title = newTitle.trim();
+    if (!title) return;
+
+    const created = await createTask(title);
+
+    const iso = newDueDate ? new Date(newDueDate + "T00:00:00").toISOString() : null;
+
+    setNewTitle("");
+    setNewDueDate("");
+
+    setTasks((p) => [created, ...p]);
+    setMetaById((p) => ({
+      ...p,
+      [created.id]: {
+        folderId: selectedFolderId ?? "inbox",
+        dueDate: iso,
+        createdAt: new Date().toISOString(),
+      },
+    }));
+  }
+
+  async function onToggle(t) {
+    const updated = await toggleTask(t.id);
+    setTasks((p) => p.map((x) => (x.id === t.id ? updated : x)));
+  }
+
+  async function onDelete(t) {
+    if (!confirm(`Delete "${t.title}"?`)) return;
+    await deleteTask(t.id);
+    setTasks((p) => p.filter((x) => x.id !== t.id));
+    setMetaById((p) => {
+      const n = { ...p };
+      delete n[t.id];
+      return n;
+    });
+  }
+
+  async function onSaveTitle(t, title) {
+    const updated = await updateTask(t.id, { title, isDone: t.isDone });
+    setTasks((p) => p.map((x) => (x.id === t.id ? updated : x)));
+  }
+
+  function onSetFolder(t, folderId) {
+    setMetaById((p) => ({ ...p, [t.id]: { ...p[t.id], folderId } }));
+  }
+
+  function onSetDueDate(t, isoOrNull) {
+    setMetaById((p) => ({ ...p, [t.id]: { ...p[t.id], dueDate: isoOrNull } }));
+  }
+
+  function onClearDue(t) {
+    setMetaById((p) => ({ ...p, [t.id]: { ...p[t.id], dueDate: null } }));
+  }
+
+  function setDueByTaskId(taskId, iso) {
+    setMetaById((p) => ({ ...p, [taskId]: { ...p[taskId], dueDate: iso } }));
+  }
+
+  // folders actions (NO PROMPT FOR ADD)
+  function addFolderFromModal({ name, color }) {
+    const id = crypto.randomUUID?.() ?? String(Date.now());
+    setFolders((p) => [{ id, name, color }, ...p]);
+  }
+
+  function renameFolder(id, name) {
+    setFolders((p) => p.map((f) => (f.id === id ? { ...f, name } : f)));
+  }
+
+  function deleteFolder(id) {
+    if (id === "inbox") return;
+
+    // move tasks to inbox
+    setMetaById((prev) => {
+      const next = { ...prev };
+      for (const k of Object.keys(next)) {
+        if (next[k]?.folderId === id) next[k] = { ...next[k], folderId: "inbox" };
+      }
+      return next;
+    });
+
+    setFolders((p) => p.filter((f) => f.id !== id));
+    if (selectedFolderId === id) setSelectedFolderId("inbox");
+  }
+
+  const dotsByDate = useMemo(() => {
+    const map = new Map();
+    for (const t of tasks) {
+      const m = metaById[t.id];
+      if (!m?.dueDate) continue;
+      const key = ymd(m.dueDate);
+      const folder = folders.find((f) => f.id === (m.folderId ?? "inbox")) ?? folders[0];
+      const arr = map.get(key) ?? [];
+      arr.push(folder.color);
+      map.set(key, arr);
+    }
+    return map;
+  }, [tasks, metaById, folders]);
+
+  const visible = useMemo(() => {
+    const now = startOfDay(new Date());
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const q = search.trim().toLowerCase();
     let list = [...tasks];
 
-    if (status === "active") list = list.filter((t) => !t.isDone);
+    // folder filter
+    list = list.filter((t) => (metaById[t.id]?.folderId ?? "inbox") === selectedFolderId);
+
+    // quick filters
+    list = list.filter((t) => {
+      const dueIso = metaById[t.id]?.dueDate;
+      const due = dueIso ? startOfDay(new Date(dueIso)) : null;
+
+      if (quick === "all") return true;
+      if (quick === "nodate") return !due;
+      if (!due) return false;
+
+      if (quick === "today") return due.getTime() === now.getTime();
+      if (quick === "tomorrow") return due.getTime() === tomorrow.getTime();
+      if (quick === "overdue") return due.getTime() < now.getTime() && !t.isDone;
+
+      return true;
+    });
+
+    // calendar selected day
+    if (selectedDay) {
+      const key = ymd(selectedDay);
+      list = list.filter((t) => {
+        const due = metaById[t.id]?.dueDate;
+        return due && ymd(due) === key;
+      });
+    }
+
+    // status
+    if (status === "open") list = list.filter((t) => !t.isDone);
     if (status === "done") list = list.filter((t) => t.isDone);
 
+    // search
     if (q) list = list.filter((t) => (t.title ?? "").toLowerCase().includes(q));
 
-    if (sort === "newest") list.sort((a, b) => b.id - a.id);
-    if (sort === "oldest") list.sort((a, b) => a.id - b.id);
-    if (sort === "az") list.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
-    if (sort === "doneFirst") list.sort((a, b) => Number(b.isDone) - Number(a.isDone) || (b.id - a.id));
+    // sort
+    const getCreated = (t) => new Date(metaById[t.id]?.createdAt ?? 0).getTime();
+    const getDue = (t) => (metaById[t.id]?.dueDate ? new Date(metaById[t.id].dueDate).getTime() : Infinity);
+
+    list.sort((a, b) => {
+      switch (sort) {
+        case "created_asc":
+          return getCreated(a) - getCreated(b);
+        case "created_desc":
+          return getCreated(b) - getCreated(a);
+        case "title_asc":
+          return (a.title ?? "").localeCompare(b.title ?? "");
+        case "title_desc":
+          return (b.title ?? "").localeCompare(a.title ?? "");
+        case "due_asc":
+          return getDue(a) - getDue(b);
+        case "due_desc":
+          return getDue(b) - getDue(a);
+        default:
+          return 0;
+      }
+    });
 
     return list;
-  }, [tasks, query, status, sort]);
+  }, [tasks, metaById, selectedFolderId, quick, selectedDay, status, search, sort]);
 
-  const stats = useMemo(() => {
-    const total = tasks.length;
-    const done = tasks.filter((t) => t.isDone).length;
-    const active = total - done;
-    return { total, done, active };
-  }, [tasks]);
-
-  async function addTask(e) {
-    e.preventDefault();
-
-    const trimmed = title.trim();
-    if (!trimmed) {
-      pushToast("warn", "Empty title", "Type something first");
-      return;
-    }
-
-    const tempId = -Date.now();
-    const temp = { id: tempId, title: trimmed, isDone: false };
-    setTasks((prev) => [temp, ...prev]);
-    setTitle("");
-
-    try {
-      const res = await apiFetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: trimmed }),
-      });
-      const created = await res.json();
-      setTasks((prev) => prev.map((t) => (t.id === tempId ? created : t)));
-      pushToast("success", "Added", trimmed);
-    } catch (e2) {
-      console.error(e2);
-      setTasks((prev) => prev.filter((t) => t.id !== tempId));
-      pushToast("error", "Add failed", "Server rejected the request");
-    }
-  }
-
-  async function toggleDone(id) {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, isDone: !t.isDone } : t)));
-
-    try {
-      await apiFetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
-    } catch (e) {
-      console.error(e);
-      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, isDone: !t.isDone } : t)));
-      pushToast("error", "Toggle failed", "Could not update this task");
-    }
-  }
-
-  function startEdit(t) {
-    setEditingId(t.id);
-    setEditingTitle(t.title ?? "");
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setEditingTitle("");
-  }
-
-  async function saveEdit(id) {
-    const trimmed = editingTitle.trim();
-    if (!trimmed) {
-      pushToast("warn", "Empty title", "Title cannot be empty");
-      return;
-    }
-
-    const before = tasks.find((t) => t.id === id);
-    if (!before) return;
-
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, title: trimmed } : t)));
-    cancelEdit();
-
-    try {
-      await apiFetch(`${API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: trimmed, isDone: before.isDone }),
-      });
-      pushToast("success", "Updated", trimmed);
-    } catch (e) {
-      console.error(e);
-      setTasks((prev) => prev.map((t) => (t.id === id ? before : t)));
-      pushToast("error", "Update failed", "Rolled back changes");
-    }
-  }
-
-  async function deleteTask(id) {
-    const before = tasks.find((t) => t.id === id);
-    if (!before) return;
-
-    if (!confirm(`Delete task "${before.title}"?`)) return;
-
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-
-    try {
-      await apiFetch(`${API_URL}/${id}`, { method: "DELETE" });
-      pushToast("success", "Deleted", before.title);
-    } catch (e) {
-      console.error(e);
-      setTasks((prev) => [before, ...prev]);
-      pushToast("error", "Delete failed", "Task restored");
-    }
-  }
-
-  async function clearCompleted() {
-    const done = tasks.filter((t) => t.isDone);
-    if (done.length === 0) return;
-
-    if (!confirm(`Clear ${done.length} completed task(s)?`)) return;
-
-    const before = tasks;
-    const doneIds = new Set(done.map((t) => t.id));
-
-    setTasks((prev) => prev.filter((t) => !doneIds.has(t.id)));
-
-    try {
-      await Promise.allSettled(done.map((t) => apiFetch(`${API_URL}/${t.id}`, { method: "DELETE" })));
-      pushToast("success", "Cleared", `${done.length} removed`);
-    } catch (e) {
-      console.error(e);
-      setTasks(before);
-      pushToast("error", "Clear failed", "Rolled back changes");
-    }
-  }
-
-  const styles = `
-    * { box-sizing: border-box; }
-    html, body, #root { height: 100%; margin: 0; }
-    button, input, select { font: inherit; }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-  `;
-
-  const page = {
-    minHeight: "100%",
-    background: theme.bg,
-    color: theme.text,
-  };
-
-  const container = {
-    width: "100%",
-    padding: 24,
-    fontFamily: "system-ui",
-  };
-
-  const content = {
-    width: "100%",
-    maxWidth: "none",
-    margin: 0,
-  };
-
-  const card = {
-    background: theme.card,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 18,
-    padding: 16,
-    boxShadow: themeKey === "dark" ? "0 12px 30px rgba(0,0,0,0.35)" : "0 12px 30px rgba(0,0,0,0.06)",
-  };
-
-  const input = {
-    height: 44,
-    padding: "0 12px",
-    borderRadius: 14,
-    border: `1px solid ${theme.border}`,
-    outline: "none",
-    background: theme.card,
-    color: theme.text,
-  };
-
-  const btn = {
-    height: 44,
-    padding: "0 14px",
-    borderRadius: 14,
-    border: `1px solid ${theme.border}`,
-    background: theme.card,
-    color: theme.text,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  };
-
-  const btnPrimary = {
-    ...btn,
-    border: `1px solid ${theme.accent}`,
-    background: theme.accent,
-    color: "#fff",
-    fontWeight: 700,
-  };
-
-  const btnDanger = {
-    ...btn,
-    border: "1px solid #ef4444",
-    background: "#ef4444",
-    color: "#fff",
-    fontWeight: 700,
-  };
+  const folderName = folders.find((f) => f.id === selectedFolderId)?.name ?? "Folder";
 
   return (
-    <div style={page}>
-      <style>{styles}</style>
-
-      <div style={container}>
-        <div style={content}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
-            <div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                <h1 style={{ margin: 0, fontSize: 44, letterSpacing: -1 }}>TaskHub</h1>
-                <span style={{ opacity: 0.7, fontWeight: 600 }}>(React)</span>
-              </div>
-              <div style={{ marginTop: 6, opacity: 0.75 }}>
-                React frontend connected to ASP.NET Core API
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-end" }}>
-              <span style={{ fontSize: 14, opacity: 0.75 }}>Theme:</span>
-              <select
-                value={themeKey}
-                onChange={(e) => setThemeKey(e.target.value)}
-                style={{ ...input, paddingRight: 10 }}
-              >
-                {Object.entries(THEMES).map(([key, t]) => (
-                  <option key={key} value={key}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 18, ...card }}>
-            <form onSubmit={addTask} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12 }}>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Add a task..."
-                maxLength={100}
-                style={input}
-              />
-              <button type="submit" style={btnPrimary}>Add</button>
-            </form>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: "1fr 140px 160px auto auto",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search..."
-                style={input}
-              />
-
-              <select value={status} onChange={(e) => setStatus(e.target.value)} style={input}>
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="done">Done</option>
-              </select>
-
-              <select value={sort} onChange={(e) => setSort(e.target.value)} style={input}>
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="az">A–Z</option>
-                <option value="doneFirst">Done first</option>
-              </select>
-
-              <button type="button" onClick={loadTasks} style={btn}>Refresh</button>
-
-              <button type="button" onClick={clearCompleted} disabled={stats.done === 0} style={btn}>
-                Clear completed
-              </button>
-            </div>
-
-            <div style={{ marginTop: 10, opacity: 0.75, fontSize: 14 }}>
-              {visibleTasks.length} shown • {stats.total} total • {stats.active} active • {stats.done} done
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            {loading ? (
-              <div style={{ opacity: 0.8 }}>Loading…</div>
-            ) : visibleTasks.length === 0 ? (
-              <div style={{ opacity: 0.8 }}>No tasks</div>
-            ) : (
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
-                {visibleTasks.map((t) => (
-                  <li
-                    key={t.id}
-                    style={{
-                      ...card,
-                      padding: 14,
-                      opacity: t.isDone ? 0.78 : 1,
-                      display: "grid",
-                      gridTemplateColumns: "auto 1fr auto",
-                      gap: 12,
-                      alignItems: "center",
-                    }}
-                  >
-                    <input type="checkbox" checked={t.isDone} onChange={() => toggleDone(t.id)} />
-
-                    {editingId === t.id ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 10, alignItems: "center" }}>
-                        <input
-                          value={editingTitle}
-                          onChange={(e) => setEditingTitle(e.target.value)}
-                          maxLength={100}
-                          style={input}
-                        />
-                        <button onClick={() => saveEdit(t.id)} style={btnPrimary}>Save</button>
-                        <button onClick={cancelEdit} style={btn}>Cancel</button>
-                      </div>
-                    ) : (
-                      <div style={{ textDecoration: t.isDone ? "line-through" : "none", fontSize: 16 }}>
-                        {t.title}
-                      </div>
-                    )}
-
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button onClick={() => startEdit(t)} style={btn}>Edit</button>
-                      <button onClick={() => deleteTask(t.id)} style={btnDanger}>Delete</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          position: "fixed",
-          right: 16,
-          bottom: 16,
-          display: "grid",
-          gap: 10,
-          width: 340,
-          maxWidth: "calc(100vw - 32px)",
-          zIndex: 9999,
+    <div className="shell">
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((v) => !v)}
+        folders={folders}
+        selectedFolderId={selectedFolderId}
+        onSelectFolder={(id) => {
+          setSelectedFolderId(id);
+          setSelectedDay(null);
         }}
-      >
-        {toasts.map((t) => {
-          const border =
-            t.type === "success" ? "#22c55e" :
-            t.type === "error" ? "#ef4444" :
-            t.type === "warn" ? "#f59e0b" :
-            theme.accent;
+        quick={quick}
+        setQuick={setQuick}
+        onOpenAddFolder={() => setFolderModalOpen(true)}
+        onRenameFolder={renameFolder}
+        onDeleteFolder={deleteFolder}
+      />
 
-          return (
-            <div
-              key={t.id}
-              style={{
-                background: theme.card,
-                border: `1px solid ${theme.border}`,
-                borderLeft: `6px solid ${border}`,
-                borderRadius: 14,
-                padding: 12,
-                boxShadow: themeKey === "dark" ? "0 10px 30px rgba(0,0,0,0.35)" : "0 10px 30px rgba(0,0,0,0.08)",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 14 }}>{t.title}</div>
-                  <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>{t.msg}</div>
-                </div>
-                <button onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))} style={btn}>
-                  ×
-                </button>
-              </div>
+      <FolderModal
+        open={folderModalOpen}
+        onClose={() => setFolderModalOpen(false)}
+        onSubmit={addFolderFromModal}
+      />
+
+      <main className="main">
+        <div className="topBar">
+          <div>
+            <div className="h1">Your tasks</div>
+            <div className="sub">
+              Folder: <b>{folderName}</b>
+              {selectedDay ? ` • Day: ${ymd(selectedDay)}` : ""}
+              {loading ? " • loading…" : ` • ${visible.length} items`}
             </div>
-          );
-        })}
-      </div>
+          </div>
+
+          <button className="btn" onClick={refresh}>
+            Refresh
+          </button>
+        </div>
+
+        <Toolbar
+          newTitle={newTitle}
+          setNewTitle={setNewTitle}
+          newDueDate={newDueDate}
+          setNewDueDate={setNewDueDate}
+          onAdd={add}
+          search={search}
+          setSearch={setSearch}
+          status={status}
+          setStatus={setStatus}
+          sort={sort}
+          setSort={setSort}
+        />
+
+        <section className="split">
+          <div>
+            <TaskList
+              tasks={visible}
+              metaById={metaById}
+              folders={folders}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              onSaveTitle={onSaveTitle}
+              onSetFolder={onSetFolder}
+              onSetDueDate={onSetDueDate}
+              onClearDue={onClearDue}
+            />
+          </div>
+
+          <div>
+            <CalendarPanel
+              cursor={cursor}
+              setCursor={setCursor}
+              selectedDay={selectedDay}
+              setSelectedDay={setSelectedDay}
+              dotsByDate={dotsByDate}
+              onDropTaskToDate={(taskId, iso) => setDueByTaskId(taskId, iso)}
+            />
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
