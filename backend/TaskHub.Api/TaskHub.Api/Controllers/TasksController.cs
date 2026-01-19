@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TaskHub.Api;
+
 
 namespace TaskHub.Api.Controllers
 {
@@ -18,7 +20,11 @@ namespace TaskHub.Api.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var tasks = _db.Tasks.AsNoTracking().ToList();
+            var tasks = _db.Tasks
+                .AsNoTracking()
+                .OrderByDescending(t => t.UpdatedAt)
+                .ToList();
+
             return Ok(tasks);
         }
 
@@ -38,10 +44,19 @@ namespace TaskHub.Api.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.Title))
                 return BadRequest("title is required");
 
+            var now = DateTime.UtcNow;
+
             var task = new TaskItem
             {
                 Title = request.Title.Trim(),
-                IsDone = false
+                IsDone = false,
+
+                DueDate = request.DueDate,
+                Color = request.Color,
+                Status = string.IsNullOrWhiteSpace(request.Status) ? "todo" : request.Status,
+
+                CreatedAt = now,
+                UpdatedAt = now
             };
 
             _db.Tasks.Add(task);
@@ -62,6 +77,12 @@ namespace TaskHub.Api.Controllers
             task.Title = request.Title.Trim();
             task.IsDone = request.IsDone;
 
+            task.DueDate = request.DueDate;
+            task.Color = request.Color;
+            task.Status = string.IsNullOrWhiteSpace(request.Status) ? "todo" : request.Status;
+
+            task.UpdatedAt = DateTime.UtcNow;
+
             _db.SaveChanges();
 
             return Ok(task);
@@ -74,6 +95,11 @@ namespace TaskHub.Api.Controllers
             if (task == null) return NotFound();
 
             task.IsDone = !task.IsDone;
+            task.UpdatedAt = DateTime.UtcNow;
+
+            if (task.IsDone)
+                task.Status = "done";
+
             _db.SaveChanges();
 
             return Ok(task);
@@ -88,10 +114,7 @@ namespace TaskHub.Api.Controllers
             _db.Tasks.Remove(task);
             _db.SaveChanges();
 
-            return NoContent(); // 204
+            return NoContent();
         }
-
-
-
     }
 }
