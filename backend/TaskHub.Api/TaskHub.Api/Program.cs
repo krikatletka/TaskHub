@@ -2,11 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using TaskHub.Api;
 
 var builder = WebApplication.CreateBuilder(args);
-// Add services to the container.
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -14,20 +14,20 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
+
+
+var dbPath = Path.Combine(AppContext.BaseDirectory, "data", "taskhub.db");
+Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=taskhub.db"));
-
+    options.UseSqlite($"Data Source={dbPath}")
+);
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
-
 app.UseAuthorization();
 app.UseCors();
 

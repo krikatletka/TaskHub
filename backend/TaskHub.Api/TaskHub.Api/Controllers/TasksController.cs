@@ -36,10 +36,10 @@ namespace TaskHub.Api.Controllers
             return Ok(task);
         }
 
-        [ProducesResponseType(typeof(TaskItem), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(TaskItem), StatusCodes.Status201Created)]///
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPost]
-        public IActionResult Add([FromBody] CreateTaskRequest request)
+        public IActionResult Add([FromBody] CreateTaskRequest request) ///дто
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Title))
                 return BadRequest("title is required");
