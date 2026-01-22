@@ -8,7 +8,8 @@ how a modern frontend connects to a real backend API.
 - ASP.NET Core Web API (.NET 8)
 - Entity Framework Core
 - SQLite
-- Swagger / OpenAPI
+- Swagger
+- Docker
 
 ### Frontend
 - React
