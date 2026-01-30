@@ -1,11 +1,36 @@
 using Microsoft.EntityFrameworkCore;
 using TaskHub.Api;
 using TaskHub.Api.Services;
-
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var factory = context.HttpContext.RequestServices
+            .GetRequiredService<ProblemDetailsFactory>();
+
+        var problem = factory.CreateValidationProblemDetails(
+            context.HttpContext,
+            context.ModelState,
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Validation failed",
+            type: "https://httpstatuses.com/400"
+        );
+
+        problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+
+        return new BadRequestObjectResult(problem)
+        {
+            ContentTypes = { "application/problem+json" }
+        };
+    };
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ITaskService, TaskService>();

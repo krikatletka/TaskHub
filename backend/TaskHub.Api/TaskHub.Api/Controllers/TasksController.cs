@@ -37,10 +37,6 @@ namespace TaskHub.Api.Controllers
         public IActionResult Add([FromBody] CreateTaskRequest request)
         {
             var result = _service.Create(request);
-
-            if (!result.ok && result.error != null)
-                return BadRequest(result.error);
-
             return CreatedAtAction(nameof(GetById), new { id = result.task!.Id }, result.task);
         }
 
@@ -48,10 +44,6 @@ namespace TaskHub.Api.Controllers
         public IActionResult Update(int id, [FromBody] UpdateTaskRequest request)
         {
             var result = _service.Update(id, request);
-
-            if (!result.ok && result.error != null)
-                return BadRequest(result.error);
-
             if (result.task == null)
                 return NotFound();
 
