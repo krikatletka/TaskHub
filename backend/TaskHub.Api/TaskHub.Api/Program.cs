@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using TaskHub.Api;
+using TaskHub.Api.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>

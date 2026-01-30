@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TaskHub.Api;
-
+using TaskHub.Api.Services;
 
 namespace TaskHub.Api.Controllers
 {
@@ -10,110 +9,68 @@ namespace TaskHub.Api.Controllers
     [ApiController]
     public class TasksController : ControllerBase
     {
-        private readonly AppDbContext _db;
+        private readonly ITaskService _service;
 
-        public TasksController(AppDbContext db)
+        public TasksController(ITaskService service)
         {
-            _db = db;
+            _service = service;
         }
 
         [HttpGet]
         public IActionResult GetAll()
         {
-            var tasks = _db.Tasks
-                .AsNoTracking()
-                .OrderByDescending(t => t.UpdatedAt)
-                .ToList();
-
+            var tasks = _service.GetAll();
             return Ok(tasks);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var task = _db.Tasks.AsNoTracking().FirstOrDefault(t => t.Id == id);
+            var task = _service.GetById(id);
             if (task == null) return NotFound();
             return Ok(task);
         }
 
-        [ProducesResponseType(typeof(TaskItem), StatusCodes.Status201Created)]///
+        [ProducesResponseType(typeof(TaskItem), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPost]
-        public IActionResult Add([FromBody] CreateTaskRequest request) ///дто
+        public IActionResult Add([FromBody] CreateTaskRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Title))
-                return BadRequest("title is required");
+            var result = _service.Create(request);
 
-            var now = DateTime.UtcNow;
+            if (!result.ok && result.error != null)
+                return BadRequest(result.error);
 
-            var task = new TaskItem
-            {
-                Title = request.Title.Trim(),
-                IsDone = false,
-
-                DueDate = request.DueDate,
-                Color = request.Color,
-                Status = string.IsNullOrWhiteSpace(request.Status) ? "todo" : request.Status,
-
-                CreatedAt = now,
-                UpdatedAt = now
-            };
-
-            _db.Tasks.Add(task);
-            _db.SaveChanges();
-
-            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
+            return CreatedAtAction(nameof(GetById), new { id = result.task!.Id }, result.task);
         }
 
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody] UpdateTaskRequest request)
         {
-            var task = _db.Tasks.FirstOrDefault(t => t.Id == id);
-            if (task == null) return NotFound();
+            var result = _service.Update(id, request);
 
-            if (request == null || string.IsNullOrWhiteSpace(request.Title))
-                return BadRequest("title is required");
+            if (!result.ok && result.error != null)
+                return BadRequest(result.error);
 
-            task.Title = request.Title.Trim();
-            task.IsDone = request.IsDone;
+            if (result.task == null)
+                return NotFound();
 
-            task.DueDate = request.DueDate;
-            task.Color = request.Color;
-            task.Status = string.IsNullOrWhiteSpace(request.Status) ? "todo" : request.Status;
-
-            task.UpdatedAt = DateTime.UtcNow;
-
-            _db.SaveChanges();
-
-            return Ok(task);
+            return Ok(result.task);
         }
 
         [HttpPatch("{id}/toggle")]
         public IActionResult ToggleDone(int id)
         {
-            var task = _db.Tasks.FirstOrDefault(t => t.Id == id);
-            if (task == null) return NotFound();
-
-            task.IsDone = !task.IsDone;
-            task.UpdatedAt = DateTime.UtcNow;
-
-            if (task.IsDone)
-                task.Status = "done";
-
-            _db.SaveChanges();
-
+            var (ok, task) = _service.ToggleDone(id);
+            if (!ok) return NotFound();
             return Ok(task);
         }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var task = _db.Tasks.FirstOrDefault(t => t.Id == id);
-            if (task == null) return NotFound();
-
-            _db.Tasks.Remove(task);
-            _db.SaveChanges();
-
+            var deleted = _service.Delete(id);
+            if (!deleted) return NotFound();
             return NoContent();
         }
     }
