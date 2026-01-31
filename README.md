@@ -3,6 +3,17 @@
 TaskHub is a fullstack practice project built to learn and demonstrate
 how a modern frontend connects to a real backend API.
 
+## ✨ What this project demonstrates
+
+This project was built as a hands-on exercise to understand how real frontend applications communicate with a backend API.
+
+It demonstrates:
+- Designing a RESTful API with ASP.NET Core
+- Separating backend and frontend into independent services
+- Connecting a React frontend to a real backend using Fetch API
+- Handling common development issues such as CORS and HTTPS configuration
+- Working with a relational database via Entity Framework Core
+- DTO-based API requests and responses
 
 ### Backend
 - ASP.NET Core Web API (.NET 8)
