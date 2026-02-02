@@ -1,4 +1,6 @@
-export const API_BASE = "https://localhost:7102";
+export const API_BASE = "http://localhost:7102";
+
+
 
 async function handle(res) {
   if (!res.ok) {
