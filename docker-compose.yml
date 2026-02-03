@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: ./backend/TaskHub.Api/TaskHub.Api
+      dockerfile: Dockerfile
+    ports:
+      - "7102:8080"
+    volumes:
+      - taskhub-data:/app/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  frontend:
+    build:
+      context: ./taskhub-react
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  taskhub-data:
